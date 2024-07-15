@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'mandelbrot_calculator.dart'; // Assuming MandelbrotCalculator logic is correct and already in use
 
 class MandelbrotGame extends FlameGame {
   double scaleX = 3.5;
@@ -9,12 +11,10 @@ class MandelbrotGame extends FlameGame {
   double offsetX = -2.5;
   double offsetY = -1.0;
   double zoomLevel = 1.0;
-  static const int MAX_ITERS = 1000;
 
   int _frames = 0;
   double _elapsedTime = 0;
   Timer? _fpsTimer;
-
   ValueNotifier<double> fps = ValueNotifier(0.0);
 
   @override
@@ -25,11 +25,14 @@ class MandelbrotGame extends FlameGame {
 
   void _startFpsLogging() {
     _fpsTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      double newFps = _frames / _elapsedTime;
-      if (kDebugMode) {
-        print('FPS: ${newFps.toStringAsFixed(2)}');
+      if (_elapsedTime > 0) {
+        // Guard against division by zero
+        double newFps = _frames / _elapsedTime;
+        if (kDebugMode) {
+          print('FPS: ${newFps.toStringAsFixed(2)}');
+        }
+        fps.value = newFps;
       }
-      fps.value = newFps;
       _frames = 0;
       _elapsedTime = 0;
     });
@@ -44,16 +47,19 @@ class MandelbrotGame extends FlameGame {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    final paint = Paint();
-    for (int x = 0; x < size.x; x++) {
-      for (int y = 0; y < size.y; y++) {
-        double cx, cy;
-        (cx, cy) = mapToComplexPlane(x, y); // Now returns a tuple of doubles
-        int iterations = mandelbrot(
-            cx, cy, MAX_ITERS); // Use the modified mandelbrot function
-        paint.color = iterationsToColor(iterations);
-        canvas.drawRect(Rect.fromLTWH(x.toDouble(), y.toDouble(), 1, 1), paint);
-      }
+    final paint = Paint()..strokeWidth = 1.0;
+
+    // Using the new method from MandelbrotCalculator and properly handling the return types
+    var data = MandelbrotCalculator.generatePointsAndColors(
+        size, offsetX, offsetY, scaleX, scaleY, zoomLevel);
+    List<Offset> points =
+        data['points'] as List<Offset>; // Explicitly cast to List<Offset>
+    List<Color> colors =
+        data['colors'] as List<Color>; // Explicitly cast to List<Color>
+
+    for (int i = 0; i < points.length; i++) {
+      paint.color = colors[i];
+      canvas.drawPoints(PointMode.points, [points[i]], paint);
     }
   }
 
@@ -62,40 +68,5 @@ class MandelbrotGame extends FlameGame {
     super.update(dt);
     _frames++;
     _elapsedTime += dt;
-  }
-
-  (double, double) mapToComplexPlane(int x, int y) {
-    return (
-      offsetX + (x / size.x * scaleX) / zoomLevel,
-      offsetY + (y / size.y * scaleY) / zoomLevel
-    );
-  }
-
-  Color iterationsToColor(int iterations) {
-    if (iterations == MAX_ITERS) {
-      return Colors.black; // Inside the Mandelbrot set
-    } else {
-      // Create a cyclic effect based on iteration count
-      double hue =
-          (iterations % 360).toDouble(); // Use the iteration count for hue
-      return HSVColor.fromAHSV(1.0, hue, 1.0, 0.5)
-          .toColor(); // Full saturation, half brightness
-    }
-  }
-
-  int mandelbrot(double cx, double cy, int maxIterations) {
-    double zx = cx, zy = cy;
-    int nv = 0;
-    for (nv; nv < maxIterations - 1; nv++) {
-      final zzx = zx * zx;
-      final zzy = zy * zy;
-      if (zzx + zzy > 4) {
-        break;
-      }
-      double newZx = zzx - zzy + cx;
-      zy = 2 * zx * zy + cy;
-      zx = newZx;
-    }
-    return nv;
   }
 }
