@@ -47,20 +47,15 @@ class MandelbrotGame extends FlameGame {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    final paint = Paint()..strokeWidth = 1.0;
+    Paint paint = Paint()..strokeWidth = 1.0;
 
-    // Using the new method from MandelbrotCalculator and properly handling the return types
-    var data = MandelbrotCalculator.generatePointsAndColors(
+    var colorMap = MandelbrotCalculator.generatePointsAndColors(
         size, offsetX, offsetY, scaleX, scaleY, zoomLevel);
-    List<Offset> points =
-        data['points'] as List<Offset>; // Explicitly cast to List<Offset>
-    List<Color> colors =
-        data['colors'] as List<Color>; // Explicitly cast to List<Color>
 
-    for (int i = 0; i < points.length; i++) {
-      paint.color = colors[i];
-      canvas.drawPoints(PointMode.points, [points[i]], paint);
-    }
+    colorMap.forEach((color, points) {
+      paint.color = color;
+      canvas.drawPoints(PointMode.points, points, paint);
+    });
   }
 
   @override

@@ -5,15 +5,14 @@ class MandelbrotCalculator {
   static const int maxIters = 1000;
 
 // Returns a tuple of lists containing Offset and Color respectively
-  static Map<String, dynamic> generatePointsAndColors(
+  static Map<Color, List<Offset>> generatePointsAndColors(
       Vector2 size,
       double offsetX,
       double offsetY,
       double scaleX,
       double scaleY,
       double zoomLevel) {
-    List<Offset> points = [];
-    List<Color> colors = [];
+    Map<Color, List<Offset>> colorMap = {};
 
     for (int x = 0; x < size.x; x++) {
       for (int y = 0; y < size.y; y++) {
@@ -22,11 +21,13 @@ class MandelbrotCalculator {
             x, y, offsetX, offsetY, scaleX, scaleY, zoomLevel, size.toSize());
         int iterations = calculate(cx, cy, maxIters);
         Color color = iterationsToColor(iterations);
-        points.add(Offset(x.toDouble(), y.toDouble()));
-        colors.add(color);
+        if (!colorMap.containsKey(color)) {
+          colorMap[color] = [];
+        }
+        colorMap[color]?.add(Offset(x.toDouble(), y.toDouble()));
       }
     }
-    return {'points': points, 'colors': colors};
+    return colorMap;
   }
 
   static int calculate(double cx, double cy, int maxIterations) {
