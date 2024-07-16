@@ -1,24 +1,24 @@
-import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 class MandelbrotCalculator {
-  static const int maxIters = 1000;
+  static int maxIterations = 1000;
 
 // Returns a tuple of lists containing Offset and Color respectively
   static Map<Color, List<Offset>> generatePointsAndColors(
-      Vector2 size,
+      Size size,
       double offsetX,
       double offsetY,
       double scaleX,
       double scaleY,
-      double zoomLevel) {
+      double zoomLevel,
+      maxIters) {
     Map<Color, List<Offset>> colorMap = {};
 
-    for (int x = 0; x < size.x; x++) {
-      for (int y = 0; y < size.y; y++) {
+    for (int x = 0; x < size.width; x++) {
+      for (int y = 0; y < size.height; y++) {
         double cx, cy;
         (cx, cy) = mapToComplexPlane(
-            x, y, offsetX, offsetY, scaleX, scaleY, zoomLevel, size.toSize());
+            x, y, offsetX, offsetY, scaleX, scaleY, zoomLevel, size);
         int iterations = calculate(cx, cy, maxIters);
         Color color = iterationsToColor(iterations);
         if (!colorMap.containsKey(color)) {
@@ -27,6 +27,7 @@ class MandelbrotCalculator {
         colorMap[color]?.add(Offset(x.toDouble(), y.toDouble()));
       }
     }
+    maxIterations = maxIters;
     return colorMap;
   }
 
@@ -47,7 +48,7 @@ class MandelbrotCalculator {
   }
 
   static Color iterationsToColor(int iterations) {
-    if (iterations == maxIters) {
+    if (iterations == maxIterations) {
       return Colors.black; // Inside the Mandelbrot set
     } else {
       double hue = (iterations % 360).toDouble();

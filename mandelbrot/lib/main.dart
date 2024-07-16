@@ -1,53 +1,79 @@
 // ignore_for_file: library_private_types_in_public_api
 
-import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'mandelbrot_game.dart';
+import 'display_mand.dart'; // Importing the display logic
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const MandelbrotApp());
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MandelbrotApp extends StatelessWidget {
+  const MandelbrotApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Home(),
+    return MaterialApp(
+      title: 'Mandelbrot Set Viewer',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const HomePage(),
     );
   }
 }
 
-class Home extends StatefulWidget {
-  const Home({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  _HomeState createState() => _HomeState();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _HomeState extends State<Home> {
-  late MandelbrotGame game;
+class _HomePageState extends State<HomePage> {
+  // Initializing TextEditingController with a default value of "256"
+  final TextEditingController _maxItersController = TextEditingController(text: "256");
 
   @override
-  void initState() {
-    super.initState();
-    game = MandelbrotGame();
+  void dispose() {
+    _maxItersController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: ValueListenableBuilder<double>(
-          valueListenable: game.fps,
-          builder: (_, fps, __) =>
-              Text('Mandelbrot Set Viewer. FPS: ${fps.toStringAsFixed(2)}'),
-          child: const Text('Mandelbrot Set Viewer'),
-        ),
-        backgroundColor: Colors.deepPurple,
+        title: const Text('Mandelbrot Set Viewer'),
       ),
-      body: GameWidget(game: game),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                controller: _maxItersController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Max Iterations',
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (_maxItersController.text.isNotEmpty) {
+                  int maxIters = int.parse(_maxItersController.text);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => DisplayMandelbrot(maxIterations: maxIters),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Generate'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
