@@ -18,6 +18,7 @@ class _DisplayMandelbrotState extends State<DisplayMandelbrot> {
   late Timer timer;
   List<double> fpsBuffer = [];
   double averageFps = 0.0;
+  final TransformationController _transformationController = TransformationController();
 
   @override
   void initState() {
@@ -42,6 +43,7 @@ class _DisplayMandelbrotState extends State<DisplayMandelbrot> {
   @override
   void dispose() {
     timer.cancel(); // Important to dispose of the timer
+    _transformationController.dispose(); // Dispose the transformation controller
     super.dispose();
   }
 
@@ -51,11 +53,16 @@ class _DisplayMandelbrotState extends State<DisplayMandelbrot> {
       appBar: AppBar(
         title: Text("FPS: ${averageFps.toStringAsFixed(2)}"), // Display the average FPS
       ),
-      body: CustomPaint(
-        painter: MandelbrotPainter(widget.maxIterations, () {
-          frameCount++; // Increment the frame count for each repaint
-        }),
-        size: Size.infinite,
+      body: InteractiveViewer(
+        transformationController: _transformationController,
+        minScale: 0.1,
+        maxScale: 50.0,
+        child: CustomPaint(
+          painter: MandelbrotPainter(widget.maxIterations, () {
+            frameCount++; // Increment the frame count for each repaint
+          }, _transformationController.value),
+          size: Size.infinite,
+        ),
       ),
     );
   }
@@ -64,20 +71,18 @@ class _DisplayMandelbrotState extends State<DisplayMandelbrot> {
 class MandelbrotPainter extends CustomPainter {
   final int maxIterations;
   final Function onPaintDone;
-  double scaleX = 3.5;
-  double scaleY = 2.0;
-  double offsetX = -2.5;
-  double offsetY = -1.0;
-  double zoomLevel = 1.0;
+  final Matrix4 transform;
 
-  MandelbrotPainter(this.maxIterations, this.onPaintDone);
+  MandelbrotPainter(this.maxIterations, this.onPaintDone, this.transform);
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.transform(transform.storage); // Apply the transformation to the canvas
+
     Paint paint = Paint()..strokeWidth = 1.0;
 
-    var colorMap = MandelbrotCalculator.generatePointsAndColors(size, offsetX,
-        offsetY, scaleX / zoomLevel, scaleY / zoomLevel, zoomLevel, maxIterations);
+    var colorMap = MandelbrotCalculator.generatePointsAndColors(
+        size, -2.5, -1.0, 3.5, 2.0, 1.0, maxIterations);
 
     colorMap.forEach((color, points) {
       paint.color = color;
@@ -88,6 +93,6 @@ class MandelbrotPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
+    return true; // Always repaint for now, to handle zoom and pan updates
   }
 }
